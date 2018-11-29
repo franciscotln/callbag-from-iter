@@ -115,7 +115,6 @@ test('it stops sending after source completion', t => {
     if (type === 0) {
       talkback = data;
       talkback(1);
-      return;
     }
     if (type === 1) {
       actual.push(data);
@@ -126,4 +125,41 @@ test('it stops sending after source completion', t => {
   });
 
   t.deepEquals(actual, [10]);
+});
+
+test('it supports lazy pulls', t => {
+  t.plan(5);
+
+  const source = fromIter([10, 20, 30]);
+
+  const actual = [];
+  const downwardsExpectedTypes = [
+    [0, 'function'],
+    [1, 'number'],
+  ];
+
+  let talkback;
+  source(0, (type, data) => {
+    const et = downwardsExpectedTypes.shift();
+    t.equals(type, et[0], 'downwards type is expected: ' + et[0]);
+    t.equals(typeof data, et[1], 'downwards data type is expected: ' + et[1]);
+
+    if (type === 0) {
+      talkback = data;
+      setTimeout(() => {
+        talkback(1);
+      }, 100);
+      setTimeout(() => {
+        talkback(2);
+      }, 150);
+    }
+    if (type === 1) {
+      actual.push(data);
+    }
+  });
+
+  setTimeout(() => {
+    t.deepEquals(actual, [10]);
+    t.end();
+  }, 180);
 });

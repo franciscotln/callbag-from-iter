@@ -1,16 +1,21 @@
 const fromIter = iter => (start, sink) => {
   if (start !== 0) return;
-  const isIterable = typeof Symbol !== 'undefined' && iter[Symbol.iterator];
-  const iterator = isIterable ? iter[Symbol.iterator]() : iter;
-  let disposed = false;
-  let result = {};
+  const iterator = typeof Symbol !== 'undefined' && iter[Symbol.iterator]
+    ? iter[Symbol.iterator]()
+    : iter;
+  let value, done = false, disposed = false, looping = false;
   sink(0, t => {
-    if (disposed) return;
-    if (t === 1) result = iterator.next();
+    if (disposed || done) return;
+    if (t === 1) {
+      while (!looping) {
+        looping = true;
+        ({ done, value } = iterator.next());
+        done ? sink(2) : sink(1, value);
+      }
+      looping = false;
+    }
     if (t === 2) disposed = true;
   });
-  while (!result.done && !disposed) sink(1, result.value);
-  if (!disposed) sink(2);
 };
 
 module.exports = fromIter;
