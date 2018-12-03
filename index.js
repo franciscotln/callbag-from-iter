@@ -3,16 +3,14 @@ const fromIter = iter => (start, sink) => {
   const iterator = typeof Symbol !== 'undefined' && iter[Symbol.iterator]
     ? iter[Symbol.iterator]()
     : iter;
-  let value, done = false, disposed = false, looping = false;
+  let value, done, disposed, draining;
   sink(0, t => {
     if (disposed || done) return;
     if (t === 1) {
-      while (!looping) {
-        looping = true;
+      while (draining = !draining) {
         ({ done, value } = iterator.next());
         done ? sink(2) : sink(1, value);
       }
-      looping = false;
     }
     if (t === 2) disposed = true;
   });
